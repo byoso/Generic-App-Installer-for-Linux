@@ -36,15 +36,16 @@ OS, without the need of any specific knowlege.
 
 1. Copy / Paste...
 ...your application where you want it to be (and to stay).
-The standard way is to create a folder in /opt, put inside the app and
-a cool icon that you want to see in your OS.
+The standard way is to create a folder in '/opt', or in
+'~/.local/share', put inside the app and a cool icon of your choice.
 
 2. In this program...
 select "create launcher",  and fill the few asked fields. You'll be asked
 for the categories you whant your app to appear in (optional).
 At the end, you'll be asked if you whant your launcher on your desktop,
 in your current working directory, or integrate the launcher in your
-OS (a copy in /usr/share/applications).
+OS. This last one makes a simple copy in ~/.local/share/applications,
+then the app will only appear in the menus for the current user.
 
 """
 
@@ -53,9 +54,9 @@ desk_form = Form([
     ("name", "Enter the name that your OS will use as application name:",
         lambda x: x != "", "not optionnal !"),
     ("comment", "The comment displayed by your OS (optionnal)"),
-    ("exec", 'Enter the absolute path to the executable',
+    ("exec", 'Enter the absolute path to the executable (drag n drop)',
         lambda x: x != "", "not optionnal !"),
-    ("icon", "Enter the absolute path of your icon (optionnal)"),
+    ("icon", "Enter the absolute path of your icon (drag n drop, optionnal)"),
 ])
 
 categories_menu = Menu()
@@ -67,8 +68,8 @@ categories_form = Form([
 ])
 manual_category_form = Form([
     ("name", (
-        "Enter your category (be sure you know",
-        " what you do, leave empty to cancel):",
+        "Enter your category (be sure you know what you're doing," +
+        " leave empty to cancel):"
         )),
 ])
 
@@ -78,6 +79,7 @@ file_path = Menu()
 class Main:
     def __init__(self):
         self.selected_cat = []
+        self.message = ""
         main_menu.add_boxes([
             ("1", "help", self.help),
             ("2", "create laucher", self.desk_form),
@@ -138,10 +140,13 @@ class Main:
         self.categories_menu()
 
     def finalize(self):
-        # clear()
+        self.data.exec = self.data.exec.strip().strip("'")
+        self.data.icon = self.data.icon.strip().strip("'")
+        clear()
+        print(self.message)
         print("LAST CHECK:\n")
         print(
-            f"Name: {self.data.name}\nComment: {self.data.comment}\n",
+            f"Name: {self.data.name}\nComment: {self.data.comment}\n" +
             f"Executable: {self.data.exec}\nIcon: {self.data.icon}")
         print("Selected categories: ")
         for cat in self.selected_cat:
@@ -155,37 +160,39 @@ class Main:
     def path_working(self):
         path = os.getcwd()+"/"
         self.create_file(self.data, self.selected_cat, path)
-        print(f"file created at {path}")
+        self.message = f"file created at {path}\n"
         self.finalize()
 
     def path_desktop(self):
         path = subprocess.check_output(
             ['xdg-user-dir', 'DESKTOP']).decode('utf-8')[:-1]+"/"
         self.create_file(self.data, self.selected_cat, path)
-        print(f"file created at {path}")
+        self.message = f"file created at {path}\n"
         self.finalize()
 
     def path_integration(self):
-        # TODO: get the root permission
-        # path = "/usr/share/applications/"
-        # self.create_file(self.data, self.selected_cat, path, root_needed=True)
+        path = subprocess.check_output(
+                ['xdg-user-dir']).decode('utf-8')[:-1]
+        path += "/.local/share/applications/"
+        self.create_file(self.data, self.selected_cat, path)
+        self.message = f"file created at {path}\n"
         self.finalize()
 
-    def create_file(self, data, categories, path, root_needed=False):
+    def create_file(self, data, categories, path):
         categories_line = ""
         for cat in categories:
             categories_line += f"{cat};"
 
-        content = f"""
-    [Desktop Entry]
-    Comment={data.comment}
-    Terminal=false
-    Name={data.name}
-    Exec={data.exec}
-    Type=Application
-    Icon={data.icon}
-    Categories={categories_line}
-        """
+        content = str(
+            "[Desktop Entry]\n" +
+            f"Name={data.name}\n" +
+            f"Exec={data.exec}\n" +
+            f"Comment={data.comment}\n" +
+            "Terminal=false\n" +
+            f"Icon={data.icon}\n" +
+            "Type=Application\n" +
+            f"Categories={categories_line}\n"
+        )
         file_path = f"{path}{data.name}"
         with open(f"{file_path}.desktop", "w") as file:
             file.write(content)
