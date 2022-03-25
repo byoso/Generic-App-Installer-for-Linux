@@ -5,6 +5,18 @@ import os
 import subprocess
 import stat
 
+## Dependencies check
+import pkg_resources
+dependencies = [
+    'flamewok>=1.0.2',
+]
+try:
+    pkg_resources.require(dependencies)
+except pkg_resources.DistributionNotFound:
+    os.system('pip install flamewok')
+
+
+import flamewok
 from flamewok import (
     Menu,
     clear,
