@@ -10,6 +10,7 @@ from flamewok import (
     clear,
     Form,
     check_type,
+    color as c,
 )
 
 
@@ -99,6 +100,7 @@ class Main:
             ("x", "quit", quit),
         ])
         clear()
+        print("-- LAUNCHER MAKER --\n")
         main_menu.ask()
 
     def help(self):
@@ -159,24 +161,21 @@ class Main:
 
     def path_working(self):
         path = os.getcwd()+"/"
-        self.create_file(self.data, self.selected_cat, path)
         self.message = f"file created at {path}\n"
-        self.finalize()
+        self.create_file(self.data, self.selected_cat, path)
 
     def path_desktop(self):
         path = subprocess.check_output(
             ['xdg-user-dir', 'DESKTOP']).decode('utf-8')[:-1]+"/"
-        self.create_file(self.data, self.selected_cat, path)
         self.message = f"file created at {path}\n"
-        self.finalize()
+        self.create_file(self.data, self.selected_cat, path)
 
     def path_integration(self):
         path = subprocess.check_output(
                 ['xdg-user-dir']).decode('utf-8')[:-1]
         path += "/.local/share/applications/"
-        self.create_file(self.data, self.selected_cat, path)
         self.message = f"file created at {path}\n"
-        self.finalize()
+        self.create_file(self.data, self.selected_cat, path)
 
     def create_file(self, data, categories, path):
         categories_line = ""
@@ -194,14 +193,24 @@ class Main:
             f"Categories={categories_line}\n"
         )
         file_path = f"{path}{data.name}"
-        with open(f"{file_path}.desktop", "w") as file:
-            file.write(content)
-        st = os.stat(f"{file_path}.desktop")
-        os.chmod(
-            f"{file_path}.desktop",
-            st.st_mode | stat.S_IEXEC | stat.S_IXUSR |
-            stat.S_IXGRP | stat.S_IXOTH
+        try:
+
+            with open(f"{file_path}.desktop", "w") as file:
+                file.write(content)
+            st = os.stat(f"{file_path}.desktop")
+            os.chmod(
+                f"{file_path}.desktop",
+                st.st_mode | stat.S_IEXEC | stat.S_IXUSR |
+                stat.S_IXGRP | stat.S_IXOTH
+                )
+        except PermissionError:
+            self.message = (
+                f"{c.warning}PERMISSION DENIED{c.end}" +
+                "\nYou should create " +
+                "the file on your desktop, and then copy it manualy " +
+                "to the intended directory."
             )
+        self.finalize()
 
 
 if __name__ == "__main__":
