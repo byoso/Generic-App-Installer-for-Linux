@@ -25,6 +25,7 @@ from flamewok import (
     color as c,
 )
 
+DEV_MODE = False
 
 categories = {
     "1": "AudioVideo",
@@ -62,17 +63,25 @@ then the app will only appear in the menus for the current user.
 
 """
 
-main_menu = Menu()
-desk_form = Form([
+main_menu = Menu(box_size = 30, line_length = 90)
+way_choice_menu = Menu(box_size = 30, line_length = 90)
+integration_menu = Menu(box_size = 30, line_length = 90)
+categories_menu = Menu(box_size = 30, line_length = 90)
+new_one_menu = Menu(box_size = 30, line_length = 90)
+
+name_form = Form([
     ("name", "Enter the name that your OS will use as application name:",
         lambda x: x != "", "not optionnal !"),
+])
+
+desktop_form = Form([
     ("comment", "The comment displayed by your OS (optionnal)"),
     ("exec", 'Enter the absolute path to the executable (drag n drop)',
         lambda x: x != "", "not optionnal !"),
     ("icon", "Enter the absolute path of your icon (drag n drop, optionnal)"),
+    ("terminal", "The app is displayed in a terminal ? (y/n, default is no)"),
 ])
 
-categories_menu = Menu()
 categories_form = Form([
     ("name", "Select the id of a category (empty to cancel)",
         lambda x: x == "" or (
@@ -86,43 +95,96 @@ manual_category_form = Form([
         )),
 ])
 
-file_path = Menu()
-
 
 class Main:
     def __init__(self):
         self.selected_cat = []
         self.message = ""
+        self.data = None
+        # Menus building
         main_menu.add_boxes([
             ("1", "help", self.help),
-            ("2", "create laucher", self.desk_form),
+            ("2", "create laucher", self.way_choice_menu),
             ("x", "quit", quit),
             ])
         categories_menu.add_boxes([
             ("1", "add a category", self.categories_form),
             ("2", "reset selection", self.reset_selected_categories),
             ("3", "manual entry", self.manual_category),
-            ("0", "done", self.finalize),
+            ("+", "done", self.finalize),
         ])
-        file_path.add_boxes([
-            "Choose where you whant the launcher\n",
-            ("1", "Working directory", self.path_working),
-            ("2", "Desktop", self.path_desktop),
-            ("3", "Integrate it !", self.path_integration),
+        way_choice_menu.add_boxes([
+            "Choose where do you whant to create the launcher\n",
+            ("1", "Working directory", self.choice_cwd),
+            ("2", "Desktop", self.choice_cwd),
+            ("3", "Integrate it in my system", self.choice_integrate),
             ("x", "quit", quit),
         ])
-        clear()
+        integration_menu.add_boxes([
+            "\nCOPY YOUR APPLICATION IN THIS OPENING DIRECTORY\n",
+            ("0", "no, cancel", quit),
+            ("+", "ok, done", self.choice_integrate2),
+        ])
+        new_one_menu.add_boxes([
+            "Add the launcher to ...\n",
+            ("1", "my Working directory", self.path_cwd),
+            ("2", "my Desktop", self.path_desktop),
+            ("x", "quit", quit),
+        ])
+
+        if not DEV_MODE:
+            clear()
         print("-- LAUNCHER MAKER --\n")
+
         main_menu.ask()
 
     def help(self):
-        clear()
+        if not DEV_MODE:
+            clear()
         print(help_content)
         main_menu.ask()
 
-    def desk_form(self):
-        self.data = desk_form.ask()
+    def way_choice_menu(self):
+        way_choice_menu.ask()
+
+    def choice_cwd(self):
+        # both for cwd and desktop choice
+        response = name_form.ask()
+        self.data = desktop_form.ask()
+        self.data.name = response.name
         self.categories_menu()
+
+    def choice_integrate(self):
+        self.response = name_form.ask()
+        self.path_integration(self.response.name)
+        if not DEV_MODE:
+            clear()
+        self.integration_menu()
+
+    def choice_integrate2(self):
+        self.data = desktop_form.ask()
+        self.data.name = self.response.name
+        self.create_file(self.data, self.selected_cat, self.path)
+        self.categories_menu()
+
+    def choice_integrate_cancel(self):
+        pass
+
+    def categories_menu(self):
+        if not DEV_MODE:
+            clear()
+        print("-- Categories selection --")
+        for id, cat in categories.items():
+            print(f"{id:<10}{cat}")
+        if len(self.selected_cat) > 0:
+            print("\nYour selection:")
+            for cat in self.selected_cat:
+                print(f"- {cat}")
+        print("\n")
+        categories_menu.ask()
+
+    def integration_menu(self):
+        integration_menu.ask()
 
     def reset_selected_categories(self):
         self.selected_cat = []
@@ -134,46 +196,16 @@ class Main:
             self.selected_cat.append(cat.name.strip())
         self.categories_menu()
 
-    def categories_menu(self):
-        clear()
-        print("-- Categories selection --")
-        for id, cat in categories.items():
-            print(f"{id:<10}{cat}")
-        if len(self.selected_cat) > 0:
-            print("\nYour selection:")
-            for cat in self.selected_cat:
-                print(f"- {cat}")
-        print("\n")
-        categories_menu.ask()
-
     def categories_form(self):
+        """asked for manual category entry"""
         selection = categories_form.ask()
         if selection.name != "" and categories[selection.name] \
                 not in self.selected_cat:
             self.selected_cat.append(categories[selection.name])
         self.categories_menu()
 
-    def finalize(self):
-        self.data.exec = self.data.exec.strip().strip("'")
-        self.data.icon = self.data.icon.strip().strip("'")
-        clear()
-        print(self.message)
-        print("LAST CHECK:\n")
-        print(
-            f"Name: {self.data.name}\nComment: {self.data.comment}\n" +
-            f"Executable: {self.data.exec}\nIcon: {self.data.icon}")
-        print("Selected categories: ")
-        for cat in self.selected_cat:
-            print(cat)
-        print("\n")
-        cwd = os.getcwd()
-        print(f"Your working directory is : {cwd}\n")
-
-        file_path.ask()
-
-    def path_working(self):
+    def path_cwd(self):
         path = os.getcwd()+"/"
-        self.message = f"file created at {path}\n"
         self.create_file(self.data, self.selected_cat, path)
 
     def path_desktop(self):
@@ -182,26 +214,35 @@ class Main:
         self.message = f"file created at {path}\n"
         self.create_file(self.data, self.selected_cat, path)
 
-    def path_integration(self):
-        path = subprocess.check_output(
+    def path_integration(self, name):
+        # create dir:
+        os.system('mkdir ~/.local/share/applications-files')
+        os.system(f'mkdir ~/.local/share/applications-files/{name}')
+        os.system(
+            'touch ~/.local/share/applications-files/'
+            f'{name}/COPY_HERE'
+            )
+        os.system(
+            f'xdg-open ~/.local/share/applications-files/{name}')
+        self.path = subprocess.check_output(
                 ['xdg-user-dir']).decode('utf-8')[:-1]
-        path += "/.local/share/applications/"
-        self.message = f"file created at {path}\n"
-        self.create_file(self.data, self.selected_cat, path)
+        self.path += f"/.local/share/applications/"
 
     def create_file(self, data, categories, path):
+        self.data.exec = self.data.exec.strip().strip("'").replace(" ", "\\ ")
+        self.data.icon = self.data.icon.strip().strip("'")
         categories_line = ""
         for cat in categories:
             categories_line += f"{cat};"
 
         content = str(
-            "[Desktop Entry]\n" +
-            f"Name={data.name}\n" +
-            f"Exec={data.exec}\n" +
-            f"Comment={data.comment}\n" +
-            "Terminal=false\n" +
-            f"Icon={data.icon}\n" +
-            "Type=Application\n" +
+            "[Desktop Entry]\n"
+            f"Name={data.name}\n"
+            f"Exec={data.exec}\n"
+            f"Comment={data.comment}\n"
+            f"Terminal={data.terminal}\n"
+            f"Icon={data.icon}\n"
+            "Type=Application\n"
             f"Categories={categories_line}\n"
         )
         file_path = f"{path}{data.name}"
@@ -215,14 +256,44 @@ class Main:
                 st.st_mode | stat.S_IEXEC | stat.S_IXUSR |
                 stat.S_IXGRP | stat.S_IXOTH
                 )
+
+            self.message = f"{c.success}FILE CREATED{c.end} at {path}\n"
+
         except PermissionError:
             self.message = (
-                f"{c.warning}PERMISSION DENIED{c.end}" +
-                "\nYou should create " +
-                "the file on your desktop, and then copy it manualy " +
+                f"{c.warning}PERMISSION DENIED{c.end}"
+                "\nYou should create "
+                "the file on your desktop, and then copy it manualy "
                 "to the intended directory."
             )
         self.finalize()
+
+    def finalize(self):
+        # set 'terminal' value
+        if self.data.terminal not in ('true', 'false'):
+            if self.data.terminal.lower().startswith('y'):
+                self.data.terminal = "true"
+            else:
+                self.data.terminal = "false"
+
+        if not DEV_MODE:
+            clear()
+        print(self.message)
+        print("LAST CHECK:\n")
+        print(
+            f"Name: {self.data.name}\nComment: {self.data.comment}\n"
+            f"Executable: {self.data.exec}\nIcon: {self.data.icon}\n"
+            f"Terminal: {self.data.terminal}\n")
+        if (self.selected_cat):
+            print("Selected categories: ")
+            for cat in self.selected_cat:
+                print(cat)
+        print("\n")
+        cwd = os.getcwd()
+        print(f"Your working directory is : {cwd}\n")
+
+        new_one_menu.ask()
+
 
 
 if __name__ == "__main__":

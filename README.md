@@ -1,6 +1,6 @@
 # Launcher Maker
 
-version: 1.0.0
+version: 1.0.0 (Stable)
 
 This script is a launcher maker, the same kind you already have in many linux distros,  
 BUT this one is much more convenient (at least for Ubuntu and mint),  
@@ -19,3 +19,4 @@ The library 'flamewok' will be installed (https://github.com/byoso/flamewok), no
 
 ### Message to AppImage providers
 Please, provide an icon alongside your AppImage file ;)
+
