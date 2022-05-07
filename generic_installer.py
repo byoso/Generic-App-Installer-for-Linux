@@ -101,29 +101,30 @@ class Main:
         self.selected_cat = []
         self.message = ""
         self.data = None
+        self.choice = ""
         # Menus building
         main_menu.add_boxes([
             ("1", "help", self.help),
             ("2", "create laucher", self.way_choice_menu),
             ("x", "quit", quit),
             ])
-        categories_menu.add_boxes([
-            ("1", "add a category", self.categories_form),
-            ("2", "reset selection", self.reset_selected_categories),
-            ("3", "manual entry", self.manual_category),
-            ("+", "done", self.finalize),
-        ])
         way_choice_menu.add_boxes([
             "Choose where do you whant to create the launcher\n",
             ("1", "Working directory", self.choice_cwd),
             ("2", "Desktop", self.choice_cwd),
-            ("3", "Integrate it in my system", self.choice_integrate),
+            ("3", "Integration in the menu", self.choice_integrate),
             ("x", "quit", quit),
         ])
         integration_menu.add_boxes([
             "\nCOPY YOUR APPLICATION IN THIS OPENING DIRECTORY\n",
             ("0", "no, cancel", quit),
-            ("+", "ok, done", self.choice_integrate2),
+            ("+", "ok, done", self.finalize),
+        ])
+        categories_menu.add_boxes([
+            ("1", "add a category", self.categories_form),
+            ("2", "reset selection", self.reset_selected_categories),
+            ("3", "manual entry", self.manual_category),
+            ("+", "done", self.end_categories),
         ])
         new_one_menu.add_boxes([
             "Add the launcher to ...\n",
@@ -145,30 +146,28 @@ class Main:
         main_menu.ask()
 
     def way_choice_menu(self):
+        # clear()
         way_choice_menu.ask()
 
     def choice_cwd(self):
-        # both for cwd and desktop choice
+        """both for cwd and desktop choice"""
+        self.choice = "no_integration"
         response = name_form.ask()
         self.data = desktop_form.ask()
         self.data.name = response.name
         self.categories_menu()
 
     def choice_integrate(self):
-        self.response = name_form.ask()
-        self.path_integration(self.response.name)
-        if not DEV_MODE:
-            clear()
-        self.integration_menu()
-
-    def choice_integrate2(self):
-        self.data = desktop_form.ask()
-        self.data.name = self.response.name
-        self.create_file(self.data, self.selected_cat, self.path)
+        self.choice = "integration"
+        self.name = name_form.ask().name
         self.categories_menu()
 
-    def choice_integrate_cancel(self):
-        pass
+    def choice_integrate2(self, path):
+        self.data = desktop_form.ask()
+        self.data.name = self.name
+        self.message = f"file created at {path}\n"
+        self.create_file(self.data, self.selected_cat, path)
+        self.finalize()
 
     def categories_menu(self):
         if not DEV_MODE:
@@ -216,17 +215,19 @@ class Main:
 
     def path_integration(self, name):
         # create dir:
+        dir_name = name.replace(" ", "_")
         os.system('mkdir ~/.local/share/applications-files')
-        os.system(f'mkdir ~/.local/share/applications-files/{name}')
+        os.system(f'mkdir ~/.local/share/applications-files/{dir_name}')
         os.system(
             'touch ~/.local/share/applications-files/'
-            f'{name}/COPY_HERE'
+            f'{dir_name}/COPY_HERE'
             )
         os.system(
-            f'xdg-open ~/.local/share/applications-files/{name}')
+            f'xdg-open ~/.local/share/applications-files/{dir_name}')
         self.path = subprocess.check_output(
                 ['xdg-user-dir']).decode('utf-8')[:-1]
-        self.path += f"/.local/share/applications/"
+        self.path += "/.local/share/applications/"
+        self.choice_integrate2(self.path)
 
     def create_file(self, data, categories, path):
         self.data.exec = self.data.exec.strip().strip("'").replace(" ", "\\ ")
@@ -268,6 +269,14 @@ class Main:
             )
         self.finalize()
 
+    def end_categories(self):
+        if self.choice == "integration":
+            self.path_integration(self.name)
+            self.integration_menu.ask()
+            pass
+        else:
+            self.finalize()
+
     def finalize(self):
         # set 'terminal' value
         if self.data.terminal not in ('true', 'false'):
@@ -293,7 +302,6 @@ class Main:
         print(f"Your working directory is : {cwd}\n")
 
         new_one_menu.ask()
-
 
 
 if __name__ == "__main__":
