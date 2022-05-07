@@ -118,7 +118,7 @@ class Main:
         integration_menu.add_boxes([
             "\nCOPY YOUR APPLICATION IN THIS OPENING DIRECTORY\n",
             ("0", "no, cancel", quit),
-            ("+", "ok, done", self.finalize),
+            ("+", "ok, done", self.end_path_integration),
         ])
         categories_menu.add_boxes([
             ("1", "add a category", self.categories_form),
@@ -135,7 +135,7 @@ class Main:
 
         if not DEV_MODE:
             clear()
-        print("-- LAUNCHER MAKER --\n")
+        print("-- Generic Installer / launcher maker --\n")
 
         main_menu.ask()
 
@@ -146,7 +146,7 @@ class Main:
         main_menu.ask()
 
     def way_choice_menu(self):
-        # clear()
+        clear()
         way_choice_menu.ask()
 
     def choice_cwd(self):
@@ -162,11 +162,11 @@ class Main:
         self.name = name_form.ask().name
         self.categories_menu()
 
-    def choice_integrate2(self, path):
+    def choice_integrate2(self):
         self.data = desktop_form.ask()
         self.data.name = self.name
-        self.message = f"file created at {path}\n"
-        self.create_file(self.data, self.selected_cat, path)
+        self.message = f"file created at {self.path}\n"
+        self.create_file(self.data, self.selected_cat, self.path)
         self.finalize()
 
     def categories_menu(self):
@@ -182,8 +182,8 @@ class Main:
         print("\n")
         categories_menu.ask()
 
-    def integration_menu(self):
-        integration_menu.ask()
+    # def integration_menu(self):
+    #     integration_menu.ask()
 
     def reset_selected_categories(self):
         self.selected_cat = []
@@ -216,8 +216,8 @@ class Main:
     def path_integration(self, name):
         # create dir:
         dir_name = name.replace(" ", "_")
-        os.system('mkdir ~/.local/share/applications-files')
-        os.system(f'mkdir ~/.local/share/applications-files/{dir_name}')
+        # os.system('mkdir ~/.local/share/applications-files')
+        os.system(f'mkdir -p ~/.local/share/applications-files/{dir_name}')
         os.system(
             'touch ~/.local/share/applications-files/'
             f'{dir_name}/COPY_HERE'
@@ -227,7 +227,11 @@ class Main:
         self.path = subprocess.check_output(
                 ['xdg-user-dir']).decode('utf-8')[:-1]
         self.path += "/.local/share/applications/"
-        self.choice_integrate2(self.path)
+
+        integration_menu.ask()
+
+    def end_path_integration(self):
+        self.choice_integrate2()
 
     def create_file(self, data, categories, path):
         self.data.exec = self.data.exec.strip().strip("'").replace(" ", "\\ ")
@@ -270,10 +274,10 @@ class Main:
         self.finalize()
 
     def end_categories(self):
+        print("=== end cat")
         if self.choice == "integration":
             self.path_integration(self.name)
             self.integration_menu.ask()
-            pass
         else:
             self.finalize()
 
