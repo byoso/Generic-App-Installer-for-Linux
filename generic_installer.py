@@ -13,7 +13,7 @@ dependencies = [
 try:
     pkg_resources.require(dependencies)
 except pkg_resources.DistributionNotFound:
-    os.system('pip install flamewok')
+    os.system('python3 -m pip install --upgrade flamewok')
 
 
 import flamewok
