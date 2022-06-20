@@ -16,3 +16,6 @@ Well, if you have interest in creating lanchers quick and easy, you should try t
 
 ### Compatibility
 This works perfectly fine with .py, .sh, .appimage executables. If the executable needs to be launched with some specific options, you'll have to manually edit the obtained .desktop file.
+
+# Known issues
+Depending on the version of python you run (3.7 and 3.8), the first attempt of running this script may fail, but after it will work fine. This problem is due to 'pip installations' done within the script, 3.7 and 3.8 don't like that.

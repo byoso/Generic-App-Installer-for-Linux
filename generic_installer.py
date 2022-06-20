@@ -1,19 +1,59 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python3.7
 # coding: utf-8
 
 import os
+import sys
 import subprocess
 import stat
 
-## Dependencies check
+
+# Dependencies check
+def check_pip(test=False):
+    """Checks if pip is installed, if it is not,
+    closes the program with a message"""
+    res = os.popen("python3 -m pip -V").read().strip()
+    OK = False
+    if res.startswith('pip'):
+        OK = True
+    if not OK or test:
+        this_file = os.path.basename(__file__)
+        print(
+            "\x1b[0;30;33m"
+            "pip is not installed for your main version of python3.\n"
+            "\x1b[0m"
+            "Please install pip first (see below)"
+            ", and then, restart your session "
+            f"before executing './{this_file}' again.\n\n"
+            "   INSTALLING pip:\n"
+            "- DEBIAN (Ubuntu, Linux Mint, etc...):\n"
+            "sudo apt install python3-pip\n"
+            "- Fedora, CentOS/RHEL 7+:\n"
+            "sudo yum install python3-pip\n"
+            "- ARCH LINUX, Manjaro:\n"
+            "sudo pacman -S python-pip\n"
+            "- OPENSUSE:\n"
+            "sudo zypper install python3-pip\n"
+            "\n"
+            "Or, for any distribution:\n"
+            "wget https://bootstrap.pypa.io/get-pip.py\n"
+            "chmod +x get-pip.py\n"
+            "sudo python3 get-pip.py\n"
+            )
+        exit()
+
+
+check_pip(test=False)
+
 import pkg_resources
 dependencies = [
     'flamewok>=1.0.2',
 ]
+version = sys.version_info
 try:
     pkg_resources.require(dependencies)
 except pkg_resources.DistributionNotFound:
-    os.system('python3 -m pip install --upgrade flamewok')
+    os.system(
+        f'python{version[0]}.{version[1]} -m pip install --upgrade flamewok')
 
 
 import flamewok
@@ -26,6 +66,8 @@ from flamewok import (
 )
 
 DEV_MODE = False
+
+
 
 categories = {
     "1": "AudioVideo",
@@ -181,9 +223,6 @@ class Main:
                 print(f"- {cat}")
         print("\n")
         categories_menu.ask()
-
-    # def integration_menu(self):
-    #     integration_menu.ask()
 
     def reset_selected_categories(self):
         self.selected_cat = []
